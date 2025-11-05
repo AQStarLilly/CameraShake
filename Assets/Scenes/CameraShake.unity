@@ -414,9 +414,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   intensity: 0.5
-  duration: 0.5
+  duration: 1
   fadeSpeed: 2
   frequency: 25
+  shakeMagnitude: 20
   useLocalPosition: 1
 --- !u!1 &410087039
 GameObject:
