@@ -413,11 +413,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 72ac10e6f7d5bb9428192aba3a1dfd7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  intensity: 0.5
-  duration: 1
+  positionIntensity: 0.5
+  positionDuration: 0.5
+  positionFrequency: 25
+  rotationIntensity: 10
+  rotationDuration: 1
+  rotationFrequency: 20
   fadeSpeed: 2
-  frequency: 25
-  shakeMagnitude: 20
   useLocalPosition: 1
 --- !u!1 &410087039
 GameObject:

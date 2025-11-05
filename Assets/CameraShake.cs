@@ -3,121 +3,127 @@ using UnityEngine;
 
 public class CameraShake : MonoBehaviour
 {
-    [Header("Shake Settings")]
+    [Header("Positional Shake Settings")]
     [Tooltip("How strong the shake movement is.")]
-    public float intensity = 0.5f;
+    public float positionIntensity = 0.5f;
 
-    [Tooltip("How long the shake lasts (seconds).")]
-    public float duration = 1f;
+    [Tooltip("How long the position shake lasts (seconds).")]
+    public float positionDuration = 0.5f;
 
+    [Tooltip("How fast the position noise moves (higher = rougher).")]
+    public float positionFrequency = 25f;
+
+    [Header("Rotational Shake Settings")]
+    [Tooltip("How strong the rotational shake is (degrees).")]
+    public float rotationIntensity = 2f;
+
+    [Tooltip("How long the rotational shake lasts (seconds).")]
+    public float rotationDuration = 0.4f;
+
+    [Tooltip("How fast the rotation noise moves.")]
+    public float rotationFrequency = 20f;
+
+    [Header("Common Settings")]
     [Tooltip("How quickly the shake fades out.")]
     public float fadeSpeed = 2.0f;
-
-    [Tooltip("How fast the noise moves (higher = rougher).")]
-    public float frequency = 25f;
-
-    [Tooltip("Magnitude of the rotation in degrees.")]
-    public float shakeMagnitude = 20f;
 
     [Tooltip("Use local position instead of world position.")]
     public bool useLocalPosition = true;
 
     private Vector3 originalPos;
-    private float shakeTimer = 0f;
-    private float seedX;
-    private float seedY;
-    private float seedZ;
-    private bool isShaking = false;
-    private Quaternion cameraRotation;
+    private Quaternion originalRot;
+
+    private float positionTimer;
+    private float rotationTimer;
+
+    private float posSeedX, posSeedY, posSeedZ;
+    private float rotSeed;
 
     void Start()
     {
-        // Save original position
+        // Save the camera's original transform
         originalPos = useLocalPosition ? transform.localPosition : transform.position;
-        cameraRotation = Quaternion.identity;
+        originalRot = transform.localRotation;
 
-        // Generate random seeds for noise variation
-        seedX = Random.value * 100f;
-        seedY = Random.value * 100f;
-        seedZ = Random.value * 100f;
+        // Random noise seeds
+        posSeedX = Random.value * 100f;
+        posSeedY = Random.value * 100f;
+        posSeedZ = Random.value * 100f;
+        rotSeed = Random.value * 100f;
     }
 
     void Update()
     {
+        // Left click = positional shake
         if (Input.GetMouseButtonDown(0))
-        {
-            StartShake();
-        }
+            StartPositionShake();
+
+        // Right click = rotational shake
         if (Input.GetMouseButtonDown(1))
-        {
-            StartShaking();
-        }
+            StartRotationShake();
 
-        if (shakeTimer > 0)
-        {
-            shakeTimer -= Time.deltaTime;
+        UpdatePositionShake();
+        UpdateRotationShake();
+    }
 
-            float normalizedTime = 1f - (shakeTimer / duration);
+    private void UpdatePositionShake()
+    {
+        if (positionTimer > 0)
+        {
+            positionTimer -= Time.deltaTime;
+            float normalizedTime = 1f - (positionTimer / positionDuration);
             float fade = Mathf.Lerp(1f, 0f, normalizedTime * fadeSpeed);
 
-            // Smooth, noise-based offset
-            float noiseX = (Mathf.PerlinNoise(seedX, Time.time * frequency) - 0.5f) * 2f;
-            float noiseY = (Mathf.PerlinNoise(seedY, Time.time * frequency) - 0.5f) * 2f;
-            float noiseZ = (Mathf.PerlinNoise(seedZ, Time.time * frequency) - 0.5f) * 2f;
+            float noiseX = (Mathf.PerlinNoise(posSeedX, Time.time * positionFrequency) - 0.5f) * 2f;
+            float noiseY = (Mathf.PerlinNoise(posSeedY, Time.time * positionFrequency) - 0.5f) * 2f;
+            float noiseZ = (Mathf.PerlinNoise(posSeedZ, Time.time * positionFrequency) - 0.5f) * 2f;
 
-            Vector3 offset = new Vector3(noiseX, noiseY, noiseZ) * intensity * fade;
+            Vector3 offset = new Vector3(noiseX, noiseY, noiseZ) * positionIntensity * fade;
 
             if (useLocalPosition)
                 transform.localPosition = originalPos + offset;
             else
                 transform.position = originalPos + offset;
-
-            if (shakeTimer <= 0)
-            {
-                ResetPosition();
-            }
         }
-    }
-
-    public void StartShake()
-    {
-        shakeTimer = duration;
-    }
-
-    private void ResetPosition()
-    {
-        if (useLocalPosition)
-            transform.localPosition = originalPos;
         else
-            transform.position = originalPos;
-    }
-
-    public void StartShaking()
-    {
-        if (!isShaking)
         {
-            StartCoroutine(Shake());
+            // reset when done
+            if (useLocalPosition)
+                transform.localPosition = originalPos;
+            else
+                transform.position = originalPos;
         }
     }
 
-    private IEnumerator Shake()
+    private void UpdateRotationShake()
     {
-        isShaking = true;
-        float elapsed = 0f;
-
-        while (elapsed < duration)
+        if (rotationTimer > 0)
         {
-            elapsed += Time.deltaTime;
+            rotationTimer -= Time.deltaTime;
+            float normalizedTime = 1f - (rotationTimer / rotationDuration);
+            float fade = Mathf.Lerp(1f, 0f, normalizedTime * fadeSpeed);
 
-            float yRotation = Mathf.PerlinNoise(-shakeMagnitude, shakeMagnitude);
+            // Smoothly rotate using Perlin noise
+            float rotNoise = (Mathf.PerlinNoise(rotSeed, Time.time * rotationFrequency) - 0.5f) * 2f;
+            float angleY = rotNoise * rotationIntensity * fade;
 
-            cameraRotation = Quaternion.Euler(new Vector3(0f, 10f, 0f));
-
-            yield return null;
+            transform.localRotation = originalRot * Quaternion.Euler(0f, angleY, 0f);
         }
+        else
+        {
+            transform.localRotation = originalRot;
+        }
+    }
 
-        cameraRotation = Quaternion.identity;
-        isShaking = false;
+    // Public triggers
+    public void StartPositionShake()
+    {
+        positionTimer = positionDuration;
+    }
+
+    public void StartRotationShake()
+    {
+        rotationTimer = rotationDuration;
     }
 }
 
